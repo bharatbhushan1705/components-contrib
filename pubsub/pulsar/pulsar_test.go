@@ -3105,3 +3105,87 @@ func TestHandleMessage_NonPatternKeepsDeclaredTopic(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "my-topic", receivedTopic)
 }
+
+func TestParsePulsarMetadataClientCert(t *testing.T) {
+	m := pubsub.Metadata{}
+	m.Properties = map[string]string{
+		"host":                  "a",
+		"tlsCertFile":           "/certs/client.cert.pem",
+		"tlsKeyFile":            "/certs/client.key.pem",
+		"tlsTrustCertsFilePath": "/certs/ca.cert.pem",
+		"tlsValidateHostname":   "true",
+	}
+	meta, err := parsePulsarMetadata(m)
+
+	require.NoError(t, err)
+	assert.Equal(t, "/certs/client.cert.pem", meta.TLSCertFile)
+	assert.Equal(t, "/certs/client.key.pem", meta.TLSKeyFile)
+	assert.Equal(t, "/certs/ca.cert.pem", meta.TLSTrustCertsFilePath)
+	assert.True(t, meta.TLSValidateHostname)
+}
+
+func TestParsePulsarMetadataClientCertRequiresBoth(t *testing.T) {
+	for _, props := range []map[string]string{
+		{"host": "a", "tlsCertFile": "/certs/client.cert.pem"},
+		{"host": "a", "tlsKeyFile": "/certs/client.key.pem"},
+	} {
+		m := pubsub.Metadata{}
+		m.Properties = props
+		_, err := parsePulsarMetadata(m)
+		require.Error(t, err)
+	}
+}
+
+func TestInitUsesClientCertAuthentication(t *testing.T) {
+	var capturedOpts pulsar.ClientOptions
+	p := NewPulsar(logger.NewLogger("test")).(*Pulsar)
+	t.Cleanup(func() {
+		p.newClientFn = pulsar.NewClient
+	})
+	p.newClientFn = func(opts pulsar.ClientOptions) (pulsar.Client, error) {
+		capturedOpts = opts
+		return nil, nil
+	}
+
+	md := pubsub.Metadata{}
+	md.Properties = map[string]string{
+		"host":                  "localhost:6651",
+		"enableTLS":             "true",
+		"tlsCertFile":           "/certs/client.cert.pem",
+		"tlsKeyFile":            "/certs/client.key.pem",
+		"tlsTrustCertsFilePath": "/certs/ca.cert.pem",
+		"tlsValidateHostname":   "true",
+	}
+	err := p.Init(t.Context(), md)
+
+	require.NoError(t, err)
+	require.NotNil(t, capturedOpts.Authentication)
+	assert.IsType(t, pulsar.NewAuthenticationTLS("", ""), capturedOpts.Authentication)
+	assert.Equal(t, "/certs/ca.cert.pem", capturedOpts.TLSTrustCertsFilePath)
+	assert.True(t, capturedOpts.TLSValidateHostname)
+}
+
+func TestInitTokenTakesPrecedenceOverClientCert(t *testing.T) {
+	var capturedOpts pulsar.ClientOptions
+	p := NewPulsar(logger.NewLogger("test")).(*Pulsar)
+	t.Cleanup(func() {
+		p.newClientFn = pulsar.NewClient
+	})
+	p.newClientFn = func(opts pulsar.ClientOptions) (pulsar.Client, error) {
+		capturedOpts = opts
+		return nil, nil
+	}
+
+	md := pubsub.Metadata{}
+	md.Properties = map[string]string{
+		"host":        "localhost:6650",
+		"token":       "jwt",
+		"tlsCertFile": "/certs/client.cert.pem",
+		"tlsKeyFile":  "/certs/client.key.pem",
+	}
+	err := p.Init(t.Context(), md)
+
+	require.NoError(t, err)
+	require.NotNil(t, capturedOpts.Authentication)
+	assert.IsType(t, pulsar.NewAuthenticationToken(""), capturedOpts.Authentication)
+}

@@ -50,6 +50,10 @@ type pulsarMetadata struct {
 	Token                            string                    `mapstructure:"token"`
 	CompressionType                  string                    `mapstructure:"compressionType"`
 	CompressionLevel                 string                    `mapstructure:"compressionLevel"`
+	TLSCertFile                      string                    `mapstructure:"tlsCertFile"`
+	TLSKeyFile                       string                    `mapstructure:"tlsKeyFile"`
+	TLSTrustCertsFilePath            string                    `mapstructure:"tlsTrustCertsFilePath"`
+	TLSValidateHostname              bool                      `mapstructure:"tlsValidateHostname"`
 	oauth2.ClientCredentialsMetadata `mapstructure:",squash"`
 }
 

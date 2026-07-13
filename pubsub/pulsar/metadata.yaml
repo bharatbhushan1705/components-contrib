@@ -60,6 +60,25 @@ authenticationProfiles:
         url:
           title: "Access Token Scope"
           url: "https://datatracker.ietf.org/doc/html/rfc6749#section-3.3"
+  - title: "Client certificate (mTLS)"
+    description: "Authenticate using a TLS client certificate"
+    metadata:
+      - name: tlsCertFile
+        type: string
+        required: true
+        description: |
+          Path to the TLS client certificate (PEM) presented to the broker.
+        example: "/certs/client.cert.pem"
+        url:
+          title: "Pulsar mTLS Authentication"
+          url: "https://pulsar.apache.org/docs/3.0.x/security-tls-authentication/"
+      - name: tlsKeyFile
+        type: string
+        required: true
+        sensitive: true
+        description: |
+          Path to the TLS client private key (PEM). Must be configured together with tlsCertFile.
+        example: "/certs/client.key.pem"
 metadata:
   - name: host
     type: string
@@ -92,6 +111,17 @@ metadata:
     type: bool
     description: |
       Enable TLS.
+    default: 'false'
+    example: '"true", "false"'
+  - name: tlsTrustCertsFilePath
+    type: string
+    description: |
+      Path to the trusted TLS certificate file (PEM) used to verify the broker's certificate.
+    example: "/certs/ca.cert.pem"
+  - name: tlsValidateHostname
+    type: bool
+    description: |
+      Validate that the broker's hostname matches its TLS certificate.
     default: 'false'
     example: '"true", "false"'
   - name: tenant

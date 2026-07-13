@@ -310,6 +310,10 @@ func parsePulsarMetadata(meta pubsub.Metadata) (*pulsarMetadata, error) {
 		return nil, err
 	}
 
+	if (m.TLSCertFile != "") != (m.TLSKeyFile != "") {
+		return nil, errors.New("tlsCertFile and tlsKeyFile must be configured together")
+	}
+
 	return &m, nil
 }
 
@@ -326,6 +330,8 @@ func (p *Pulsar) Init(ctx context.Context, metadata pubsub.Metadata) error {
 		OperationTimeout:           30 * time.Second,
 		ConnectionTimeout:          30 * time.Second,
 		TLSAllowInsecureConnection: !m.EnableTLS,
+		TLSTrustCertsFilePath:      m.TLSTrustCertsFilePath,
+		TLSValidateHostname:        m.TLSValidateHostname,
 		ListenerName:               m.ListenerName,
 	}
 
@@ -340,6 +346,8 @@ func (p *Pulsar) Init(ctx context.Context, metadata pubsub.Metadata) error {
 			return fmt.Errorf("could not instantiate oauth2 token provider: %w", err)
 		}
 		options.Authentication = pulsar.NewAuthenticationTokenFromSupplier(cliCreds.Token)
+	case len(m.TLSCertFile) > 0:
+		options.Authentication = pulsar.NewAuthenticationTLS(m.TLSCertFile, m.TLSKeyFile)
 	}
 
 	client, err := p.newClientFn(options)
