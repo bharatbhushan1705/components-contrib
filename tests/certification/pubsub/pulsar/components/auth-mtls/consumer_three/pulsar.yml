@@ -1,0 +1,22 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: messagebus
+spec:
+  type: pubsub.pulsar
+  version: v1
+  metadata:
+  - name: host
+    value: "pulsar+ssl://localhost:6651"
+  - name: enableTLS
+    value: "true"
+  - name: tlsCertFile
+    value: "./config/certs/client.cert.pem"
+  - name: tlsKeyFile
+    value: "./config/certs/client.key-pk8.pem"
+  - name: tlsTrustCertsFilePath
+    value: "./config/certs/ca.cert.pem"
+  - name: consumerID
+    value: certification3
+  - name: redeliveryDelay
+    value: 200ms

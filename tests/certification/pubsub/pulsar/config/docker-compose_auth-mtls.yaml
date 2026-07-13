@@ -1,0 +1,33 @@
+# Pulsar standalone with TLS listener requiring a trusted client certificate.
+# The plaintext port stays open for standalone's internal clients (anonymous
+# role); the component under test must connect to 6651 with a client cert.
+version: '2'
+services:
+  standalone:
+    image: apachepulsar/pulsar:3.0.0
+    ports:
+      - "6650:6650"
+      - "6651:6651"
+      - "8080:8080"
+    environment:
+      - PULSAR_MEM=-Xms512m -Xmx512m -XX:MaxDirectMemorySize=256m
+      - PULSAR_PREFIX_brokerServicePortTls=6651
+      - PULSAR_PREFIX_webServicePortTls=8443
+      - tlsCertificateFilePath=/pulsar/mtls-certs/broker.cert.pem
+      - tlsKeyFilePath=/pulsar/mtls-certs/broker.key-pk8.pem
+      - tlsTrustCertsFilePath=/pulsar/mtls-certs/ca.cert.pem
+      - tlsRequireTrustedClientCertOnConnect=true
+      - authenticationEnabled=true
+      - authenticationProviders=org.apache.pulsar.broker.authentication.AuthenticationProviderTls
+      - anonymousUserRole=anonymous
+    command: >
+      /bin/bash -c
+      "bin/apply-config-from-env.py conf/standalone.conf
+      && bin/pulsar standalone --advertised-address localhost"
+    volumes:
+      - ./certs:/pulsar/mtls-certs:ro
+      - pulsardata:/pulsar/data
+      - pulsarconf:/pulsar/conf
+volumes:
+  pulsardata:
+  pulsarconf:

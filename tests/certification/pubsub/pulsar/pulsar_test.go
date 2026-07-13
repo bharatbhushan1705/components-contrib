@@ -84,6 +84,7 @@ const (
 	partition1                  = "partition-1"
 	clusterName                 = "pulsarcertification"
 	dockerComposeAuthNoneYAML   = "./config/docker-compose_auth-none.yaml"
+	dockerComposeAuthMtlsYAML   = "./config/docker-compose_auth-mtls.yaml"
 	dockerComposeAuthOAuth2YAML = "./config/docker-compose_auth-oauth2.yaml.tmpl"
 	dockerComposeMockOAuth2YAML = "./config/docker-compose_auth-mock-oauth2-server.yaml"
 	pulsarURL                   = "localhost:6650"
@@ -116,6 +117,15 @@ func TestPulsar(t *testing.T) {
 			authType:          "none",
 			dockerComposeYAML: dockerComposeAuthNoneYAML,
 			componentsPath:    "./components/auth-none",
+			services:          []string{"standalone"},
+		})
+	})
+
+	t.Run("Auth:mTLS", func(t *testing.T) {
+		suite.Run(t, &pulsarSuite{
+			authType:          "mtls",
+			dockerComposeYAML: dockerComposeAuthMtlsYAML,
+			componentsPath:    "./components/auth-mtls",
 			services:          []string{"standalone"},
 		})
 	})
